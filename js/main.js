@@ -4,42 +4,83 @@ import BackGround from './runtime/background'
 import GameInfo from './runtime/gameinfo'
 import Music from './runtime/music'
 import DataBus from './databus'
+import Config from './common/config'
 
 let ctx = canvas.getContext('2d')
 let databus = new DataBus()
+
+//const UpdateRate = require('./common/config.js').UpdateRate
 
 /**
  * 游戏主函数
  */
 export default class Main {
   constructor() {
-    // 维护当前requestAnimationFrame的id
-    this.aniId = 0
 
+    //1.两个主循环
+    this.renderLoopId = 0
+    this.bindloopRender = this.loopRender.bind(this)
+    this.updateInterval = 1000 / Config.UpdateRate
+    this.bindloopUpdate = this.loopUpdate.bind(this)
+
+    //2.不需重置的游戏数据
+    //...
+
+    //3.初次/重新启动
     this.restart()
+
+    //4.其他：转发、广告...
+    wx.showShareMenu()
+    wx.updateShareMenu({
+      withShareTicket: true
+    })
+    wx.onShareAppMessage(function () {
+      return {
+        title: '增强版飞机大战',
+        imageUrl: canvas.toTempFilePathSync({
+          destWidth: 500,
+          destHeight: 900
+        })
+      }
+    })
+    let bannerAd = wx.createBannerAd({
+      adUnitId: 'xxxx', //迷の广告商人...
+      style: {
+        left: 10,
+        top: 76,
+        width: 320
+      }
+    })
+    bannerAd.show()
   }
 
   restart() {
     databus.reset()
 
+    //1.玩家操控事件
     canvas.removeEventListener(
       'touchstart',
       this.touchHandler
     )
+    //this.hasEventBind = false  //IMPROVE
 
+    //2.需重置的游戏数据
     this.bg = new BackGround(ctx)
     this.player = new Player(ctx)
     this.gameinfo = new GameInfo()
     this.music = new Music()
 
-    this.bindLoop = this.loop.bind(this)
-    this.hasEventBind = false
-
-    // 清除上一局的动画
-    window.cancelAnimationFrame(this.aniId);
-
-    this.aniId = window.requestAnimationFrame(
-      this.bindLoop,
+    //3.两个主循环
+    if (this.updateTimer)
+      clearInterval(this.updateTimer)
+    this.updateTimer = setInterval(
+      this.bindloopUpdate,
+      this.updateInterval
+    )
+    if (this.renderLoopId != 0)
+      window.cancelAnimationFrame(this.renderLoopId);
+    this.renderLoopId = window.requestAnimationFrame(
+      this.bindloopRender,
       canvas
     )
   }
@@ -87,7 +128,7 @@ export default class Main {
     }
   }
 
-  // 游戏结束后的触摸事件处理逻辑
+  //-- 游戏【操控】事件处理 ----
   touchEventHandler(e) {
     e.preventDefault()
 
@@ -103,10 +144,31 @@ export default class Main {
       this.restart()
   }
 
-  /**
-   * canvas重绘函数
-   * 每一帧重新绘制所有的需要展示的元素
-   */
+  //-- 游戏数据【更新】主函数 ----
+  update(timeElapsed) {
+    if (databus.gameOver)
+      return;
+
+    this.bg.update()
+
+    databus.frame++  //IMPROVE
+    databus.bullets
+      .concat(databus.enemys)
+      .forEach((item) => {
+        item.update()
+      })
+
+    this.enemyGenerate()
+
+    this.collisionDetection()
+
+    if (databus.frame % 20 === 0) {
+      this.player.shoot()
+      this.music.playShoot()
+    }
+  }
+
+  //-- 游戏数据【渲染】主函数 ----
   render() {
     ctx.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -140,39 +202,21 @@ export default class Main {
     }
   }
 
-  // 游戏逻辑更新主函数
-  update() {
-    if (databus.gameOver)
-      return;
 
-    this.bg.update()
-
-    databus.bullets
-      .concat(databus.enemys)
-      .forEach((item) => {
-        item.update()
-      })
-
-    this.enemyGenerate()
-
-    this.collisionDetection()
-
-    if (databus.frame % 20 === 0) {
-      this.player.shoot()
-      this.music.playShoot()
-    }
+  //-- 游戏数据【更新】主循环 ----
+  loopUpdate() {
+    let timeElapsed = new Date().getTime() - this.lastUpdateTime
+    this.lastUpdateTime = new Date().getTime()
+    this.update(timeElapsed)
   }
 
-  // 实现游戏帧循环
-  loop() {
-    databus.frame++
-
-    this.update()
+  //-- 游戏数据【渲染】主循环 ----
+  loopRender() {
     this.render()
-
-    this.aniId = window.requestAnimationFrame(
-      this.bindLoop,
+    this.renderLoopId = window.requestAnimationFrame(
+      this.bindloopRender,
       canvas
     )
   }
+
 }
