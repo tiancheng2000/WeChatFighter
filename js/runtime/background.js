@@ -20,6 +20,10 @@ export default class BackGround extends Sprite {
     this.top = 0
   }
 
+  onTouchEvent(type, x, y, callback) {
+    //nop
+  }
+
   update() {
     this.top += 2
 

@@ -24,9 +24,6 @@ export default class Player extends Sprite {
     this.touched = false
 
     this.bullets = []
-
-    // 初始化事件监听
-    this.initEvent()
   }
 
   /**
@@ -74,38 +71,22 @@ export default class Player extends Sprite {
    * 玩家响应手指的触摸事件
    * 改变战机的位置
    */
-  initEvent() {
-    canvas.addEventListener('touchstart', ((e) => {
-      e.preventDefault()
-
-      let x = e.touches[0].clientX
-      let y = e.touches[0].clientY
-
-      //
-      if ( this.checkIsFingerOnAir(x, y) ) {
-        this.touched = true
-
-        this.setAirPosAcrossFingerPosZ(x, y)
-      }
-
-    }).bind(this))
-
-    canvas.addEventListener('touchmove', ((e) => {
-      e.preventDefault()
-
-      let x = e.touches[0].clientX
-      let y = e.touches[0].clientY
-
-      if ( this.touched )
-        this.setAirPosAcrossFingerPosZ(x, y)
-
-    }).bind(this))
-
-    canvas.addEventListener('touchend', ((e) => {
-      e.preventDefault()
-
-      this.touched = false
-    }).bind(this))
+  onTouchEvent(type, x, y, callback) {
+    switch (type){
+      case 'touchstart':
+        if (this.checkIsFingerOnAir(x, y)) {
+          this.touched = true
+          this.setAirPosAcrossFingerPosZ(x, y)
+        }
+        break;
+      case 'touchmove':
+        if (this.touched)
+          this.setAirPosAcrossFingerPosZ(x, y)
+        break;
+      case 'touchend':
+        this.touched = false
+        break;
+    }
   }
 
   /**
