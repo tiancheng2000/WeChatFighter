@@ -1,3 +1,5 @@
+import Util from '../common/util'
+
 const screenWidth  = window.innerWidth
 const screenHeight = window.innerHeight
 
@@ -5,6 +7,19 @@ let atlas = new Image()
 atlas.src = 'images/Common.png'
 
 export default class GameInfo {
+  constructor() {
+    this.showGameOver = false
+  }
+
+  onTouchEvent(type, x, y, callback) {
+    if (this.showGameOver && type == 'touchstart') {
+      if (Util.inArea({x, y}, this.btnRestart)) {
+        callback({ message: 'restart' })
+        this.showGameOver = false
+      }
+    }
+  }
+
   renderGameScore(ctx, score) {
     ctx.fillStyle = "#ffffff"
     ctx.font      = "20px Arial"
@@ -17,6 +32,7 @@ export default class GameInfo {
   }
 
   renderGameOver(ctx, score) {
+    this.showGameOver = true
     ctx.drawImage(atlas, 0, 0, 119, 108, screenWidth / 2 - 150, screenHeight / 2 - 100, 300, 300)
 
     ctx.fillStyle = "#ffffff"
@@ -52,7 +68,7 @@ export default class GameInfo {
      * 重新开始按钮区域
      * 方便简易判断按钮点击
      */
-    this.btnArea = {
+    this.btnRestart = {
       startX: screenWidth / 2 - 40,
       startY: screenHeight / 2 - 100 + 180,
       endX  : screenWidth / 2  + 50,

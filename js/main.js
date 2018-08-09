@@ -5,6 +5,7 @@ import GameInfo from './runtime/gameinfo'
 import Music from './runtime/music'
 import DataBus from './databus'
 import Config from './common/config'
+import ControlLayer from './base/controllayer'
 
 let ctx = canvas.getContext('2d')
 let databus = new DataBus()
@@ -18,66 +19,66 @@ export default class Main {
   constructor() {
 
     //1.两个主循环
-    this.renderLoopId = 0
-    this.bindloopRender = this.loopRender.bind(this)
-    this.updateInterval = 1000 / Config.UpdateRate
     this.bindloopUpdate = this.loopUpdate.bind(this)
+    this.bindloopRender = this.loopRender.bind(this)
 
-    //2.不需重置的游戏数据
-    //...
+    //2.不需重置的游戏数据、玩家操控处理机制
+    ;//<--编译器BUG，不加";"会和下一语句拼成一句而出错
+    ['touchstart', 'touchmove', 'touchend'].forEach((type) => {
+      canvas.addEventListener(type, this.touchEventHandler.bind(this))
+    })
 
     //3.初次/重新启动
     this.restart()
 
     //4.其他：转发、广告...
-    wx.showShareMenu()
-    wx.updateShareMenu({
-      withShareTicket: true
-    })
-    wx.onShareAppMessage(function () {
-      return {
-        title: '增强版飞机大战',
-        imageUrl: canvas.toTempFilePathSync({
-          destWidth: 500,
-          destHeight: 900
-        })
-      }
-    })
-    let bannerAd = wx.createBannerAd({
-      adUnitId: 'xxxx', //迷の广告商人...
-      style: {
-        left: 10,
-        top: 76,
-        width: 320
-      }
-    })
-    bannerAd.show()
+    {
+      wx.showShareMenu()
+      wx.updateShareMenu({
+        withShareTicket: true
+      })
+      wx.onShareAppMessage(function () {
+        return {
+          title: '增强版飞机大战',
+          imageUrl: canvas.toTempFilePathSync({
+            destWidth: 500,
+            destHeight: 900
+          })
+        }
+      })
+      let bannerAd = wx.createBannerAd({
+        adUnitId: 'xxxx', //迷の广告商人...
+        style: {
+          left: 10,
+          top: 76,
+          width: 320
+        }
+      })
+      bannerAd.show()
+    }
   }
 
   restart() {
     databus.reset()
 
-    //1.玩家操控事件
-    canvas.removeEventListener(
-      'touchstart',
-      this.touchHandler
-    )
-    //this.hasEventBind = false  //IMPROVE
-
-    //2.需重置的游戏数据
+    //1.需重置的游戏数据、玩家操控处理机制
+    this.updateInterval = 1000 / Config.UpdateRate
     this.bg = new BackGround(ctx)
     this.player = new Player(ctx)
     this.gameinfo = new GameInfo()
     this.music = new Music()
-
-    //3.两个主循环
+    this.ctrlLayerUI = new ControlLayer('UI', [this.gameinfo])
+    this.ctrlLayerSprites = new ControlLayer('Sprites', [this.player])
+    this.ctrlLayerBackground = new ControlLayer('Background', [this.bg], false)
+    
+    //2.两个主循环重启
     if (this.updateTimer)
       clearInterval(this.updateTimer)
     this.updateTimer = setInterval(
       this.bindloopUpdate,
       this.updateInterval
     )
-    if (this.renderLoopId != 0)
+    if (this.renderLoopId)
       window.cancelAnimationFrame(this.renderLoopId);
     this.renderLoopId = window.requestAnimationFrame(
       this.bindloopRender,
@@ -129,19 +130,38 @@ export default class Main {
   }
 
   //-- 游戏【操控】事件处理 ----
-  touchEventHandler(e) {
+  touchEventHandler(e){
     e.preventDefault()
+    let [x, y] = (e.type == 'touchstart' || e.type == 'touchmove') ?
+      [e.touches[0].clientX, e.touches[0].clientY] : [null, null]
 
-    let x = e.touches[0].clientX
-    let y = e.touches[0].clientY
+    //规则：1.只会从上层往下层传(只有捕获capture，没有冒泡bubble) 
+    //     2.当上层发生过处理时下层不再处理(parent-catch)
+    //     3.同一层中，有一个元素处理过（队头优先）其他元素即不再处理(sibling-catch)
+    let upperLayerHandled = false
+    ;[this.ctrlLayerUI, this.ctrlLayerSprites, this.ctrlLayerBackground]
+    .forEach((ctrlLayer) => {
+      if (upperLayerHandled)
+        return false //stop handling
+      if (!ctrlLayer.active)
+        return true //next layer
+      //console.log(`${e.type}: ${ctrlLayer.name}`)
+      ctrlLayer.elements.some((element) => {
+        //console.log(`${e.type}: ${element.__proto__.constructor.name}`)
+        element.onTouchEvent(e.type, x, y, ((res) => {
+          switch (res.message) {
+            case 'restart':
+              this.restart()
+              break
+          }
+          if (res.message.length > 0){
+            upperLayerHandled = true
+            return true //if any element handled the event, stop iteration
+          }
+        }).bind(this))
+      })
+    })
 
-    let area = this.gameinfo.btnArea
-
-    if (x >= area.startX
-      && x <= area.endX
-      && y >= area.startY
-      && y <= area.endY)
-      this.restart()
   }
 
   //-- 游戏数据【更新】主函数 ----
@@ -162,9 +182,15 @@ export default class Main {
 
     this.collisionDetection()
 
+    //即使GameOver仍可能发最后一颗子弹..仇恨的子弹..
     if (databus.frame % 20 === 0) {
       this.player.shoot()
       this.music.playShoot()
+    }
+
+    if (databus.gameOver) {
+      this.ctrlLayerSprites.active = false
+      this.ctrlLayerBackground.active = false
     }
   }
 
@@ -193,12 +219,6 @@ export default class Main {
     // 游戏结束停止帧循环
     if (databus.gameOver) {
       this.gameinfo.renderGameOver(ctx, databus.score)
-
-      if (!this.hasEventBind) {
-        this.hasEventBind = true
-        this.touchHandler = this.touchEventHandler.bind(this)
-        canvas.addEventListener('touchstart', this.touchHandler)
-      }
     }
   }
 
