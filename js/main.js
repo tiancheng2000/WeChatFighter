@@ -69,7 +69,8 @@ export default class Main {
     this.music = new Music()
     this.ctrlLayerUI = new ControlLayer('UI', [this.gameinfo])
     this.ctrlLayerSprites = new ControlLayer('Sprites', [this.player])
-    this.ctrlLayerBackground = new ControlLayer('Background', [this.bg], false)
+    this.ctrlLayerBackground = new ControlLayer('Background', [this.bg], 
+        Config.CtrlLayers.Background.DefaultActive)
     
     //2.两个主循环重启
     if (this.updateTimer)
@@ -84,6 +85,17 @@ export default class Main {
       this.bindloopRender,
       canvas
     )
+  }
+
+  pause() {
+    databus.gameStatus = DataBus.GamePaused
+    this.ctrlLayerSprites.active = false
+    this.ctrlLayerBackground.active = false
+  }
+  resume() {
+    databus.gameStatus = DataBus.GameRunning
+    this.ctrlLayerSprites.active = true
+    this.ctrlLayerBackground.active = Config.CtrlLayers.Background.DefaultActive
   }
 
   /**
@@ -122,7 +134,7 @@ export default class Main {
       let enemy = databus.enemys[i]
 
       if (this.player.isCollideWith(enemy)) {
-        databus.gameOver = true
+        databus.gameStatus = DataBus.GameOver
 
         break
       }
@@ -150,8 +162,28 @@ export default class Main {
         //console.log(`${e.type}: ${element.__proto__.constructor.name}`)
         element.onTouchEvent(e.type, x, y, ((res) => {
           switch (res.message) {
+            //--- Game Status Switch ---
             case 'restart':
               this.restart()
+              break
+            case 'pause':
+              this.pause()
+              break
+            case 'resume':
+              this.resume()
+              break
+            //--- Setting Commands ---
+            case 'switchUpdateRate':
+              wx.showToast({title: 'not implemented'})
+              break
+            case 'switchBulletSpeed':
+              wx.showToast({ title: 'not implemented' })
+              break
+            case 'switchBulletType':
+              wx.showToast({ title: 'not implemented' })
+              break
+            case 'youAreGod':
+              wx.showToast({ title: 'not implemented' })
               break
           }
           if (res.message.length > 0){
@@ -166,8 +198,8 @@ export default class Main {
 
   //-- 游戏数据【更新】主函数 ----
   update(timeElapsed) {
-    if (databus.gameOver)
-      return;
+    if ([DataBus.GameOver, DataBus.GamePaused].indexOf(databus.gameStatus) > -1)
+      return
 
     this.bg.update()
 
@@ -188,7 +220,8 @@ export default class Main {
       this.music.playShoot()
     }
 
-    if (databus.gameOver) {
+    //GameOver can only be caused by collisionDetection
+    if (databus.gameStatus == DataBus.GameOver) {
       this.ctrlLayerSprites.active = false
       this.ctrlLayerBackground.active = false
     }
@@ -217,7 +250,7 @@ export default class Main {
     this.gameinfo.renderGameScore(ctx, databus.score)
 
     // 游戏结束停止帧循环
-    if (databus.gameOver) {
+    if (databus.gameStatus == DataBus.GameOver) {
       this.gameinfo.renderGameOver(ctx, databus.score)
     }
   }

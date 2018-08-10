@@ -6,17 +6,44 @@ const screenHeight = window.innerHeight
 let atlas = new Image()
 atlas.src = 'images/Common.png'
 
+const SettingCommands = {
+  textList: ['每秒数据更新频率切换', '子弹速度切换', '子弹类型切换', '无敌模式切换'],
+  commandList: ['switchUpdateRate', 'switchBulletSpeed', 'switchBulletType', 'youAreGod'],
+  optionList: [[60, 6], [10, 20], ['single', 'double'], [false, true]]
+}
+
 export default class GameInfo {
   constructor() {
     this.showGameOver = false
   }
 
   onTouchEvent(type, x, y, callback) {
-    if (this.showGameOver && type == 'touchstart') {
-      if (Util.inArea({x, y}, this.btnRestart)) {
-        callback({ message: 'restart' })
-        this.showGameOver = false
-      }
+    switch (type) {
+      case 'touchstart':
+        if (Util.inArea({ x, y }, this.areaSetting)){
+          callback({ message: 'pause' })
+          let commandIndex
+          wx.showActionSheet({
+            itemList: SettingCommands.textList,
+            success: function (res) {
+              commandIndex = res.tapIndex
+            },
+            complete: function () {
+              if (commandIndex){
+                callback({
+                  message: SettingCommands.commandList[commandIndex],
+                  option: SettingCommands.optionList[commandIndex]
+                })
+              }
+              callback({ message: 'resume' })
+            }
+          })
+        }
+        else if (this.showGameOver && Util.inArea({ x, y }, this.btnRestart)) {
+          callback({ message: 'restart' })
+          this.showGameOver = false
+        }
+        break
     }
   }
 
@@ -24,11 +51,26 @@ export default class GameInfo {
     ctx.fillStyle = "#ffffff"
     ctx.font      = "20px Arial"
 
+    //visualize area boundary
+    // ctx.drawImage(
+    //   atlas,
+    //   202, 6, 39, 24,
+    //   10, 10,
+    //   28, 25
+    // )
+
+    //candidate icons: ⏲⏱⏰⏳🏹🏆🏅🙌👾👁🐲👹😎☏✧☟😘🎈🎊⚙❤🐷💥👁‍🗨💬🔄💠㊙💦🍙🍒💎
     ctx.fillText(
-      score,
-      10,
-      30
+      '🏅 ' + score, //设定图标
+      10, 10 + 20
     )
+
+    this.areaSetting = {
+      startX: 10,
+      startY: 10,
+      endX: 10 + 28, //ctx.font = '20px Arial'
+      endY: 10 + 25
+    }
   }
 
   renderGameOver(ctx, score) {
