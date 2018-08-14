@@ -23,7 +23,7 @@ export default class DataBus {
     this.bullets    = []
     this.enemys     = []
     this.animations = []
-    this.gameOver   = false
+    this.gameStatus = DataBus.GameRunning
   }
 
   /**
@@ -50,3 +50,7 @@ export default class DataBus {
     this.pool.recover('bullet', bullet)
   }
 }
+
+DataBus.GameRunning = 0
+DataBus.GameOver = 1
+DataBus.GamePaused = 2
