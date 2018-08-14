@@ -12,6 +12,8 @@ const PLAYER_HEIGHT  = 80
 
 let databus = new DataBus()
 
+const Config = require('../common/config.js').Config
+
 export default class Player extends Sprite {
   constructor() {
     super(PLAYER_IMG_SRC, PLAYER_WIDTH, PLAYER_HEIGHT)
@@ -23,7 +25,6 @@ export default class Player extends Sprite {
     // 用于在手指移动的时候标识手指是否已经在飞机上了
     this.touched = false
 
-    this.bullets = []
   }
 
   /**
@@ -94,14 +95,18 @@ export default class Player extends Sprite {
    * 射击时机由外部决定
    */
   shoot() {
-    let bullet = databus.pool.getItemByClass('bullet', Bullet)
+    let bullets = []
+    let bulletNum = (Config.Bullet.Type === 'single') ? 1 : 2
+    for (let i = 0; i < bulletNum; i++)
+      bullets.push(databus.pool.getItemByClass('bullet', Bullet))
 
-    bullet.init(
-      this.x + this.width / 2 - bullet.width / 2,
-      this.y - 10,
-      10
-    )
-
-    databus.bullets.push(bullet)
+    bullets.forEach( (bullet, index) => {
+      bullet.init(
+        this.x + this.width * (index+1) / (bulletNum+1) - bullet.width / 2,
+        this.y - 10,
+        Config.Bullet.Speed
+      )
+      databus.bullets.push(bullet)
+    })
   }
 }

@@ -12,6 +12,10 @@ class Config {
         DefaultActive: false
       }
     }
+    this.Bullet = {
+      Speed: 10,
+      Type: 'single'
+    }
     this.GodMode = false
     //----------------------------
   }
