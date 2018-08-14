@@ -7,9 +7,9 @@ let atlas = new Image()
 atlas.src = 'images/Common.png'
 
 const SettingCommands = {
-  textList: ['每秒数据更新频率切换', '子弹速度切换', '子弹类型切换', '无敌模式切换'],
-  commandList: ['switchUpdateRate', 'switchBulletSpeed', 'switchBulletType', 'youAreGod'],
-  optionList: [[60, 6], [10, 20], ['single', 'double'], [false, true]]
+  textList: ['每秒数据更新频率切换', '子弹速度切换', '子弹类型切换', '无敌模式切换', '背景层事件响应切换'],
+  commandList: ['switchUpdateRate', 'switchBulletSpeed', 'switchBulletType', 'youAreGod', 'backgroundActive'],
+  optionListList: [[60, 6], [10, 20], ['single', 'double'], [false, true], [false, true]]
 }
 
 export default class GameInfo {
@@ -29,10 +29,10 @@ export default class GameInfo {
               commandIndex = res.tapIndex
             },
             complete: function () {
-              if (commandIndex){
+              if (commandIndex !== undefined){
                 callback({
                   message: SettingCommands.commandList[commandIndex],
-                  option: SettingCommands.optionList[commandIndex]
+                  optionList: SettingCommands.optionListList[commandIndex]
                 })
               }
               callback({ message: 'resume' })

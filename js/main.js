@@ -4,13 +4,14 @@ import BackGround from './runtime/background'
 import GameInfo from './runtime/gameinfo'
 import Music from './runtime/music'
 import DataBus from './databus'
-import Config from './common/config'
+//import Config from './common/config'
 import ControlLayer from './base/controllayer'
+import Util from './common/util'
 
 let ctx = canvas.getContext('2d')
 let databus = new DataBus()
 
-//const UpdateRate = require('./common/config.js').UpdateRate
+const Config = require('./common/config.js').Config
 
 /**
  * 游戏主函数
@@ -26,6 +27,9 @@ export default class Main {
     ;//<--编译器BUG，不加";"会和下一语句拼成一句而出错
     ['touchstart', 'touchmove', 'touchend'].forEach((type) => {
       canvas.addEventListener(type, this.touchEventHandler.bind(this))
+    })
+    ;['UpdateRate', 'CtrlLayers.Background.DefaultActive', 'GodMode'].forEach(propName => {
+      Config.subscribe(propName, this.onConfigChanged.bind(this))
     })
 
     //3.初次/重新启动
@@ -61,6 +65,9 @@ export default class Main {
   restart() {
     databus.reset()
 
+    //0.与通用类的关联
+    console.log(`Restart: Config.UpdateRate=${Config.UpdateRate}`)
+
     //1.需重置的游戏数据、玩家操控处理机制
     this.updateInterval = 1000 / Config.UpdateRate
     this.bg = new BackGround(ctx)
@@ -70,7 +77,7 @@ export default class Main {
     this.ctrlLayerUI = new ControlLayer('UI', [this.gameinfo])
     this.ctrlLayerSprites = new ControlLayer('Sprites', [this.player])
     this.ctrlLayerBackground = new ControlLayer('Background', [this.bg], 
-        Config.CtrlLayers.Background.DefaultActive)
+        Config.CtrlLayers.Background.DefaultActive)  //this.CtrlLayers.Background.DefaultActive)
     
     //2.两个主循环重启
     if (this.updateTimer)
@@ -88,11 +95,15 @@ export default class Main {
   }
 
   pause() {
+    if (databus.gameStatus == DataBus.GameOver)
+      return
     databus.gameStatus = DataBus.GamePaused
     this.ctrlLayerSprites.active = false
     this.ctrlLayerBackground.active = false
   }
   resume() {
+    if (databus.gameStatus == DataBus.GameOver)
+      return
     databus.gameStatus = DataBus.GameRunning
     this.ctrlLayerSprites.active = true
     this.ctrlLayerBackground.active = Config.CtrlLayers.Background.DefaultActive
@@ -130,13 +141,15 @@ export default class Main {
       }
     })
 
-    for (let i = 0, il = databus.enemys.length; i < il; i++) {
-      let enemy = databus.enemys[i]
+    if (!Config.GodMode){
+      for (let i = 0, il = databus.enemys.length; i < il; i++) {
+        let enemy = databus.enemys[i]
 
-      if (this.player.isCollideWith(enemy)) {
-        databus.gameStatus = DataBus.GameOver
+        if (this.player.isCollideWith(enemy)) {
+          databus.gameStatus = DataBus.GameOver
 
-        break
+          break
+        }
       }
     }
   }
@@ -151,12 +164,11 @@ export default class Main {
     //     2.当上层发生过处理时下层不再处理(parent-catch)
     //     3.同一层中，有一个元素处理过（队头优先）其他元素即不再处理(sibling-catch)
     let upperLayerHandled = false
-    ;[this.ctrlLayerUI, this.ctrlLayerSprites, this.ctrlLayerBackground]
-    .forEach((ctrlLayer) => {
+    for (let ctrlLayer of [this.ctrlLayerUI, this.ctrlLayerSprites, this.ctrlLayerBackground]) {
       if (upperLayerHandled)
-        return false //stop handling
+        break //stop handling
       if (!ctrlLayer.active)
-        return true //next layer
+        continue //next layer
       //console.log(`${e.type}: ${ctrlLayer.name}`)
       ctrlLayer.elements.some((element) => {
         //console.log(`${e.type}: ${element.__proto__.constructor.name}`)
@@ -174,7 +186,7 @@ export default class Main {
               break
             //--- Setting Commands ---
             case 'switchUpdateRate':
-              wx.showToast({title: 'not implemented'})
+              Config.UpdateRate = Util.findNext(res.optionList, Config.UpdateRate)
               break
             case 'switchBulletSpeed':
               wx.showToast({ title: 'not implemented' })
@@ -183,7 +195,10 @@ export default class Main {
               wx.showToast({ title: 'not implemented' })
               break
             case 'youAreGod':
-              wx.showToast({ title: 'not implemented' })
+              Config.GodMode = Util.findNext(res.optionList, Config.GodMode)
+              break
+            case 'backgroundActive':
+              Config.CtrlLayers.Background.DefaultActive = Util.findNext(res.optionList, Config.CtrlLayers.Background.DefaultActive)
               break
           }
           if (res.message.length > 0){
@@ -192,7 +207,7 @@ export default class Main {
           }
         }).bind(this))
       })
-    })
+    }
 
   }
 
@@ -224,6 +239,31 @@ export default class Main {
     if (databus.gameStatus == DataBus.GameOver) {
       this.ctrlLayerSprites.active = false
       this.ctrlLayerBackground.active = false
+    }
+  }
+
+  onConfigChanged(key, value){
+    console.log(`onConfigChanged: ${key}=${value}`)
+    switch (key){
+      case 'UpdateRate':
+        this.updateInterval = 1000 / Config.UpdateRate
+        if (this.updateTimer)
+          clearInterval(this.updateTimer)
+        this.updateTimer = setInterval(
+          this.bindloopUpdate,
+          this.updateInterval
+        )
+        break
+      case 'CtrlLayers.Background.DefaultActive':
+        wx.showToast({
+          title: `Active=${Config.CtrlLayers.Background.DefaultActive}`,
+        })
+        break
+      case 'GodMode':
+        wx.showToast({
+          title: value ? '无敌！' : '小心，无敌取消',
+        })
+        break
     }
   }
 
