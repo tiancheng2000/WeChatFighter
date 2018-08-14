@@ -28,7 +28,8 @@ export default class Main {
     ['touchstart', 'touchmove', 'touchend'].forEach((type) => {
       canvas.addEventListener(type, this.touchEventHandler.bind(this))
     })
-    ;['UpdateRate', 'CtrlLayers.Background.DefaultActive', 'GodMode'].forEach(propName => {
+    ;['UpdateRate', 'CtrlLayers.Background.DefaultActive', 'GodMode']
+    .forEach(propName => {
       Config.subscribe(propName, this.onConfigChanged.bind(this))
     })
 
@@ -133,7 +134,8 @@ export default class Main {
           enemy.playAnimation()
           that.music.playExplosion()
 
-          bullet.visible = false
+          //bullet.visible = false
+          databus.removeBullets(bullet)
           databus.score += 1
 
           break
@@ -189,10 +191,10 @@ export default class Main {
               Config.UpdateRate = Util.findNext(res.optionList, Config.UpdateRate)
               break
             case 'switchBulletSpeed':
-              wx.showToast({ title: 'not implemented' })
+              Config.Bullet.Speed = Util.findNext(res.optionList, Config.Bullet.Speed)
               break
             case 'switchBulletType':
-              wx.showToast({ title: 'not implemented' })
+              Config.Bullet.Type = Util.findNext(res.optionList, Config.Bullet.Type)
               break
             case 'youAreGod':
               Config.GodMode = Util.findNext(res.optionList, Config.GodMode)
@@ -256,7 +258,7 @@ export default class Main {
         break
       case 'CtrlLayers.Background.DefaultActive':
         wx.showToast({
-          title: `Active=${Config.CtrlLayers.Background.DefaultActive}`,
+          title: Config.CtrlLayers.Background.DefaultActive ? '有效' : '无效',
         })
         break
       case 'GodMode':

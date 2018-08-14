@@ -31,7 +31,8 @@ export default class DataBus {
    * 此后不进入帧循环
    */
   removeEnemey(enemy) {
-    let temp = this.enemys.shift()
+    let temp = (enemy === undefined) ?
+      this.enemys.shift() : this.enemys.splice(this.enemys.indexOf(enemy), 1)
 
     temp.visible = false
 
@@ -43,7 +44,9 @@ export default class DataBus {
    * 此后不进入帧循环
    */
   removeBullets(bullet) {
-    let temp = this.bullets.shift()
+    //let temp = this.bullets.shift()  //原版的简化处理
+    let temp = (bullet === undefined) ? 
+      this.bullets.shift() : this.bullets.splice(this.bullets.indexOf(bullet), 1)
 
     temp.visible = false
 
