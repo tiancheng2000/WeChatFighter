@@ -22,8 +22,22 @@ export default class DataBus {
     this.score      = 0
     this.bullets    = []
     this.enemys     = []
-    this.animations = []
+    //this.animations = []  //不再需要
     this.gameStatus = DataBus.GameRunning
+  }
+
+  /**
+   * 回收子弹，进入对象池
+   * 此后不进入帧循环
+   */
+  removeBullets(bullet) {
+    //let temp = this.bullets.shift()  //原版的简化处理
+    let temp = (bullet === undefined) ? 
+      this.bullets.shift() : this.bullets.splice(this.bullets.indexOf(bullet), 1)
+
+    temp.visible = false
+
+    this.pool.recover('bullet', bullet)
   }
 
   /**
@@ -40,17 +54,11 @@ export default class DataBus {
   }
 
   /**
-   * 回收子弹，进入对象池
+   * 回收动画，进入对象池
    * 此后不进入帧循环
    */
-  removeBullets(bullet) {
-    //let temp = this.bullets.shift()  //原版的简化处理
-    let temp = (bullet === undefined) ? 
-      this.bullets.shift() : this.bullets.splice(this.bullets.indexOf(bullet), 1)
-
-    temp.visible = false
-
-    this.pool.recover('bullet', bullet)
+  removeAnimation(anim) {
+    this.pool.recover('animation', anim)
   }
 }
 

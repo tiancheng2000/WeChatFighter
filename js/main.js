@@ -7,6 +7,7 @@ import DataBus from './databus'
 //import Config from './common/config'
 import ControlLayer from './base/controllayer'
 import Util from './common/util'
+import Constants from './common/constants'
 
 let ctx = canvas.getContext('2d')
 let databus = new DataBus()
@@ -71,6 +72,8 @@ export default class Main {
 
     //1.需重置的游戏数据、玩家操控处理机制
     this.updateInterval = 1000 / Config.UpdateRate
+    this.updateTimes = 0
+    this.lastRenderTime = new Date().getTime()
     this.bg = new BackGround(ctx)
     this.player = new Player(ctx)
     this.gameinfo = new GameInfo()
@@ -115,9 +118,10 @@ export default class Main {
    * 帧数取模定义成生成的频率
    */
   enemyGenerate() {
-    if (databus.frame % 30 === 0) {
+    if ((this.updateTimes * Constants.Enemy.SpawnRate) % Config.UpdateRate
+      < Constants.Enemy.SpawnRate) {
       let enemy = databus.pool.getItemByClass('enemy', Enemy)
-      enemy.init(6)
+      enemy.init(Constants.Enemy.Speed)
       databus.enemys.push(enemy)
     }
   }
@@ -130,12 +134,11 @@ export default class Main {
       for (let i = 0, il = databus.enemys.length; i < il; i++) {
         let enemy = databus.enemys[i]
 
-        if (!enemy.isPlaying && enemy.isCollideWith(bullet)) {
-          enemy.playAnimation()
+        if (enemy.isAlive() && enemy.isCollideWith(bullet)) {
+          enemy.destroy()
+          bullet.destroy()
           that.music.playExplosion()
 
-          //bullet.visible = false
-          databus.removeBullets(bullet)
           databus.score += 1
 
           break
@@ -220,11 +223,10 @@ export default class Main {
 
     this.bg.update()
 
-    databus.frame++  //IMPROVE
     databus.bullets
       .concat(databus.enemys)
       .forEach((item) => {
-        item.update()
+        item.update(timeElapsed)
       })
 
     this.enemyGenerate()
@@ -232,7 +234,8 @@ export default class Main {
     this.collisionDetection()
 
     //即使GameOver仍可能发最后一颗子弹..仇恨的子弹..
-    if (databus.frame % 20 === 0) {
+    if ((this.updateTimes * Constants.Bullet.SpawnRate) % Config.UpdateRate
+       < Constants.Bullet.SpawnRate) {
       this.player.shoot()
       this.music.playShoot()
     }
@@ -278,16 +281,14 @@ export default class Main {
     databus.bullets
       .concat(databus.enemys)
       .forEach((item) => {
-        item.drawToCanvas(ctx)
+        item.render(ctx)
       })
 
-    this.player.drawToCanvas(ctx)
+    this.player.render(ctx)
 
-    databus.animations.forEach((ani) => {
-      if (ani.isPlaying) {
-        ani.aniRender(ctx)
-      }
-    })
+    // databus.animations.forEach((anim) => {
+    //   anim.render(ctx)
+    // })
 
     this.gameinfo.renderGameScore(ctx, databus.score)
 
@@ -300,8 +301,9 @@ export default class Main {
 
   //-- 游戏数据【更新】主循环 ----
   loopUpdate() {
-    let timeElapsed = new Date().getTime() - this.lastUpdateTime
-    this.lastUpdateTime = new Date().getTime()
+    this.updateTimes++
+    let timeElapsed = new Date().getTime() - this.lastRenderTime
+    this.lastRenderTime = new Date().getTime()
     this.update(timeElapsed)
   }
 

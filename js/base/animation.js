@@ -1,112 +1,90 @@
-import Sprite  from './sprite'
-import DataBus from '../databus'
-
-let databus = new DataBus()
+const Config = require('../common/config.js').Config
 
 const __ = {
-  timer: Symbol('timer'),
+  age: Symbol('age'),
+  MAX_AGE: Symbol('MAX_AGE'),
+  frameRate: Symbol('frameRate'),
+  FRAMEINTERVAL_RECIP: Symbol('FRAMEINTERVAL_RECIP'),
+  explosionAnim: Symbol('explosionAnim')
 }
+
 
 /**
  * 简易的帧动画类实现
  */
-export default class Animation extends Sprite {
-  constructor(imgSrc, width, height) {
-    super(imgSrc, width, height)
+export default class Animation {
+  constructor(frames, onFinished, loop = false, frameRate = Config.UpdateRate, atlasFrameHeight = 0) {
+    this.frames = frames
+    this.loop = loop
+    this[__.frameRate] = frameRate
+    this[__.age] = undefined
+    this.currIndex = undefined
+    this.atlasFrameHeight = atlasFrameHeight //for 8-direction atlas
+    this.onFinished = onFinished
+    this[__.MAX_AGE] = frames.length * 1000 / frameRate
+    this[__.FRAMEINTERVAL_RECIP] = frameRate / 1000
+  }
 
-    // 当前动画是否播放中
-    this.isPlaying = false
+  isStarted() {
+    return this[__.age] !== undefined
+  }
 
-    // 动画是否需要循环播放
+  isFinished() {
+    return this[__.age] >= this[__.MAX_AGE]
+  }
+
+  start() {
+    this[__.age] = 0
+    this.currIndex = 0
+  }
+
+  stop() {
     this.loop = false
-
-    // 每一帧的时间间隔
-    this.interval = 1000 / 60
-
-    // 帧定时器
-    this[__.timer] = null
-
-    // 当前播放的帧
-    this.index = -1
-
-    // 总帧数
-    this.count = 0
-
-    // 帧图片集合
-    this.imgList = []
-
-    /**
-     * 推入到全局动画池里面
-     * 便于全局绘图的时候遍历和绘制当前动画帧
-     */
-    databus.animations.push(this)
+    this[__.age] = this[__.MAX_AGE]
   }
 
-  /**
-   * 初始化帧动画的所有帧
-   * 为了简单，只支持一个帧动画
-   */
-  initFrames(imgList) {
-    imgList.forEach((imgSrc) => {
-      let img = new Image()
-      img.src = imgSrc
-
-      this.imgList.push(img)
-    })
-
-    this.count = imgList.length
+  update(timeElapsed) {
+    this[__.age] += timeElapsed
+    if (this.isFinished()) {
+      if (this.loop)
+        this.start()
+      else {
+        this.currIndex = this.frames.length - 1
+        if (this.onFinished !== undefined)
+          this.onFinished(this)
+      }
+    }
+    else {
+      this.currIndex = Math.floor(this[__.age] * this[__.FRAMEINTERVAL_RECIP])
+    }
   }
 
-  // 将播放中的帧绘制到canvas上
-  aniRender(ctx) {
+  // 渲染当前帧
+  render(ctx, x, y, width = 0, height = 0, alignMode = 'topleft', direction = undefined) {
+    if (!this.isStarted() || this.isFinished())
+      return
+
+    let currFrame = this.frames[this.currIndex]
+    //根据渲染对齐方式，修正渲染位置
+    width = width == 0 ? currFrame.width : width,
+    height = height == 0 ? currFrame.height : height
+    if (alignMode === 'center'){
+      x -= width / 2
+      y -= height / 2
+    }
+    
+    //asssert(currFrame.image)
     ctx.drawImage(
-      this.imgList[this.index],
-      this.x,
-      this.y,
-      this.width  * 1.2,
-      this.height * 1.2
+      currFrame.image,
+      currFrame.srcX,
+      currFrame.srcY + Number.isNaN(direction) ? direction * this.atlasFrameHeight : 0,
+      currFrame.width,
+      currFrame.height,
+      x + currFrame.offsetX,
+      y + currFrame.offsetY,
+      width == 0 ? currFrame.width : width,
+      height == 0 ? currFrame.height : height
     )
   }
 
-  // 播放预定的帧动画
-  playAnimation(index = 0, loop = false) {
-    // 动画播放的时候精灵图不再展示，播放帧动画的具体帧
-    this.visible   = false
-
-    this.isPlaying = true
-    this.loop      = loop
-
-    this.index     = index
-
-    if ( this.interval > 0 && this.count ) {
-      this[__.timer] = setInterval(
-        this.frameLoop.bind(this),
-        this.interval
-      )
-    }
-  }
-
-  // 停止帧动画播放
-  stop() {
-    this.isPlaying = false
-
-    if ( this[__.timer] )
-      clearInterval(this[__.timer])
-  }
-
-  // 帧遍历
-  frameLoop() {
-    this.index++
-
-    if ( this.index > this.count - 1 ) {
-      if ( this.loop ) {
-        this.index = 0
-      }
-
-      else {
-        this.index--
-        this.stop()
-      }
-    }
-  }
 }

@@ -18,7 +18,7 @@ export default class Sprite {
   /**
    * 将精灵图绘制在canvas上
    */
-  drawToCanvas(ctx) {
+  render(ctx) {
     if ( !this.visible )
       return
 
