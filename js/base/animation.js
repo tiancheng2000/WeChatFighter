@@ -3,7 +3,6 @@ const Config = require('../common/config.js').Config
 const __ = {
   age: Symbol('age'),
   MAX_AGE: Symbol('MAX_AGE'),
-  frameRate: Symbol('frameRate'),
   FRAMEINTERVAL_RECIP: Symbol('FRAMEINTERVAL_RECIP'),
   explosionAnim: Symbol('explosionAnim')
 }
@@ -13,16 +12,26 @@ const __ = {
  * 简易的帧动画类实现
  */
 export default class Animation {
-  constructor(frames, onFinished, loop = false, frameRate = Config.UpdateRate, atlasFrameHeight = 0) {
+  constructor(frames, onFinished, frameRate = Config.UpdateRate, loop = false, atlasFrameHeight = 0) {
     this.frames = frames
-    this.loop = loop
-    this[__.frameRate] = frameRate
+    this.frameRate = frameRate
     this[__.age] = undefined
     this.currIndex = undefined
-    this.atlasFrameHeight = atlasFrameHeight //for 8-direction atlas
     this.onFinished = onFinished
-    this[__.MAX_AGE] = frames.length * 1000 / frameRate
-    this[__.FRAMEINTERVAL_RECIP] = frameRate / 1000
+    this.loop = loop
+    this.atlasFrameHeight = atlasFrameHeight //for 8-direction atlas
+  }
+
+  //computed values
+  get MAX_AGE() {
+    if (!Array.isArray(this.frames) || Number.isNaN(this.frameRate))
+      return 0
+    return this.frames.length * 1000 / this.frameRate
+  }
+  get frameIntervalRecipcal(){
+    if (Number.isNaN(this.frameRate))
+      return 0
+    return this.frameRate / 1000
   }
 
   isStarted() {
@@ -30,7 +39,7 @@ export default class Animation {
   }
 
   isFinished() {
-    return this[__.age] >= this[__.MAX_AGE]
+    return this[__.age] >= this.MAX_AGE
   }
 
   start() {
@@ -40,7 +49,7 @@ export default class Animation {
 
   stop() {
     this.loop = false
-    this[__.age] = this[__.MAX_AGE]
+    this[__.age] = this.MAX_AGE
   }
 
   update(timeElapsed) {
@@ -55,7 +64,7 @@ export default class Animation {
       }
     }
     else {
-      this.currIndex = Math.floor(this[__.age] * this[__.FRAMEINTERVAL_RECIP])
+      this.currIndex = Math.floor(this[__.age] * this.frameIntervalRecipcal)
     }
   }
 
@@ -82,8 +91,8 @@ export default class Animation {
       currFrame.height,
       x + currFrame.offsetX,
       y + currFrame.offsetY,
-      width == 0 ? currFrame.width : width,
-      height == 0 ? currFrame.height : height
+      width,
+      height
     )
   }
 
