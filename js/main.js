@@ -132,7 +132,8 @@ export default class Main {
   //漂浮物生成逻辑
   floatageGenerate() {
     if ((this.updateTimes * Constants.Floatage.SpawnRate) % Config.UpdateRate
-      < Constants.Floatage.SpawnRate) {
+      < Constants.Floatage.SpawnRate
+      && databus.floatages.length < Constants.Floatage.SpawnMax) {
       let floatage = databus.pool.getItemByClass('floatage', Floatage)
       floatage.init(Constants.Floatage.Speed)
       databus.floatages.push(floatage)

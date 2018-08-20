@@ -72,7 +72,7 @@ export default class Animation {
   }
 
   // 渲染当前帧
-  render(ctx, x, y, width = 0, height = 0, alignMode = 'topleft', direction = undefined) {
+  render(ctx, x, y, width = 0, height = 0, alignMode = 'topleft', atlasHeightIndex = 0) {
     if (!this.isLoaded() || !this.isStarted() || this.isFinished())
       return
 
@@ -89,7 +89,7 @@ export default class Animation {
     ctx.drawImage(
       currFrame.image,
       currFrame.srcX,
-      currFrame.srcY + Number.isNaN(direction) ? direction * this.atlasFrameHeight : 0,
+      currFrame.srcY + atlasHeightIndex * this.atlasFrameHeight,
       currFrame.width,
       currFrame.height,
       x + currFrame.offsetX,
