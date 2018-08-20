@@ -1,6 +1,6 @@
 import Sprite    from '../base/sprite'
 import Animation from '../base/animation'
-import AnimationResource from '../base/animresource'
+import AnimationBuilder from '../base/animbuilder'
 import DataBus   from '../databus'
 const Config = require('../common/config.js').Config
 
@@ -28,6 +28,7 @@ export default class Enemy extends Sprite {
   init(speed) {
     this.x = rnd(0, window.innerWidth - ENEMY_WIDTH)
     this.y = -this.height
+    //this.birth = new Date().getTime()
 
     this[__.speed] = speed
 
@@ -53,8 +54,10 @@ export default class Enemy extends Sprite {
   update(timeElapsed) {
     if (this.isAlive()) {
       this.y += this[__.speed]
-      if (this.y > window.innerHeight + this.height)
+      if (this.y > window.innerHeight + this.height){
         databus.removeEnemey(this)  //对象回收
+        //console.log('Enemy life: ' + (new Date().getTime() - this.birth))
+      }
     }
     else {  //destroyed
       this.y += this[__.speed]  //即便炸毁了还有惯性
@@ -80,4 +83,4 @@ Enemy.explosionImageList = function() {
   }
   return imageList
 }
-Enemy.frames = AnimationResource.initFramesFromPaths(Enemy.explosionImageList())
+Enemy.frames = AnimationBuilder.initFramesFromPaths(Enemy.explosionImageList())

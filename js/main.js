@@ -1,5 +1,6 @@
 import Player from './player/index'
 import Enemy from './npc/enemy'
+import Floatage from './npc/floatage'
 import BackGround from './runtime/background'
 import GameInfo from './runtime/gameinfo'
 import Music from './runtime/music'
@@ -19,6 +20,8 @@ const Config = require('./common/config.js').Config
  */
 export default class Main {
   constructor() {
+
+    console.log(`window.innerHeight = ${window.innerHeight}`)
 
     //1.两个主循环
     this.bindloopUpdate = this.loopUpdate.bind(this)
@@ -126,6 +129,17 @@ export default class Main {
     }
   }
 
+  //漂浮物生成逻辑
+  floatageGenerate() {
+    if ((this.updateTimes * Constants.Floatage.SpawnRate) % Config.UpdateRate
+      < Constants.Floatage.SpawnRate
+      && databus.floatages.length < Constants.Floatage.SpawnMax) {
+      let floatage = databus.pool.getItemByClass('floatage', Floatage)
+      floatage.init(Constants.Floatage.Speed)
+      databus.floatages.push(floatage)
+    }
+  }
+
   // 全局碰撞检测
   collisionDetection() {
     let that = this
@@ -143,6 +157,17 @@ export default class Main {
 
           break
         }
+      }
+    })
+
+    databus.floatages.forEach( floatage => {
+      if (this.player.isCollideWith(floatage)) {
+        floatage.dispose()
+        Config.Bullet.Type = Util.findNext(Constants.Bullet.Types, Config.Bullet.Type)
+        Config.Bullet.Speed = Constants.Bullet.SpeedBase * (Constants.Bullet.Types.indexOf(Config.Bullet.Type) + 1)
+        wx.showToast({
+          title: '捕获未知漂浮物'
+        })
       }
     })
 
@@ -225,11 +250,14 @@ export default class Main {
 
     databus.bullets
       .concat(databus.enemys)
+      .concat(databus.floatages)
       .forEach((item) => {
         item.update(timeElapsed)
       })
 
     this.enemyGenerate()
+
+    this.floatageGenerate()
 
     this.collisionDetection()
 
@@ -247,8 +275,8 @@ export default class Main {
     }
   }
 
-  onConfigChanged(key, value){
-    console.log(`onConfigChanged: ${key}=${value}`)
+  onConfigChanged(key, value, oldValue){
+    console.log(`Main::onConfigChanged: ${key}=${value}`)
     switch (key){
       case 'UpdateRate':
         this.updateInterval = 1000 / Config.UpdateRate
@@ -280,6 +308,7 @@ export default class Main {
 
     databus.bullets
       .concat(databus.enemys)
+      .concat(databus.floatages)
       .forEach((item) => {
         item.render(ctx)
       })

@@ -2,27 +2,40 @@ const Config = require('../common/config.js').Config
 
 const __ = {
   age: Symbol('age'),
-  MAX_AGE: Symbol('MAX_AGE'),
-  frameRate: Symbol('frameRate'),
-  FRAMEINTERVAL_RECIP: Symbol('FRAMEINTERVAL_RECIP'),
-  explosionAnim: Symbol('explosionAnim')
 }
-
 
 /**
  * 简易的帧动画类实现
  */
 export default class Animation {
-  constructor(frames, onFinished, loop = false, frameRate = Config.UpdateRate, atlasFrameHeight = 0) {
+  constructor(frames, frameRate = Config.UpdateRate, sizeRate = 1,
+    loop = false, onFinished = undefined, atlasFrameHeight = 0) {
     this.frames = frames
-    this.loop = loop
-    this[__.frameRate] = frameRate
+    this.frameRate = frameRate
+    this.sizeRate = sizeRate
     this[__.age] = undefined
     this.currIndex = undefined
-    this.atlasFrameHeight = atlasFrameHeight //for 8-direction atlas
     this.onFinished = onFinished
-    this[__.MAX_AGE] = frames.length * 1000 / frameRate
-    this[__.FRAMEINTERVAL_RECIP] = frameRate / 1000
+    this.loop = loop
+    this.atlasFrameHeight = atlasFrameHeight //for 8-direction atlas
+  }
+
+  //computed values
+  get MAX_AGE() {
+    if (!Array.isArray(this.frames) || Number.isNaN(this.frameRate))
+      return 0
+    return this.frames.length * 1000 / this.frameRate
+  }
+  get frameIntervalRecipcal(){
+    if (Number.isNaN(this.frameRate))
+      return 0
+    return this.frameRate / 1000
+  }
+
+  isLoaded() {
+    let res = Array.isArray(this.frames) && this.frames.length > 0
+    if (!res) console.log(`Animation is not loaded`)
+    return res
   }
 
   isStarted() {
@@ -30,7 +43,7 @@ export default class Animation {
   }
 
   isFinished() {
-    return this[__.age] >= this[__.MAX_AGE]
+    return this[__.age] >= this.MAX_AGE
   }
 
   start() {
@@ -40,7 +53,7 @@ export default class Animation {
 
   stop() {
     this.loop = false
-    this[__.age] = this[__.MAX_AGE]
+    this[__.age] = this.MAX_AGE
   }
 
   update(timeElapsed) {
@@ -50,24 +63,23 @@ export default class Animation {
         this.start()
       else {
         this.currIndex = this.frames.length - 1
-        if (this.onFinished !== undefined)
-          this.onFinished(this)
+        this.onFinished && this.onFinished(this)
       }
     }
     else {
-      this.currIndex = Math.floor(this[__.age] * this[__.FRAMEINTERVAL_RECIP])
+      this.currIndex = Math.floor(this[__.age] * this.frameIntervalRecipcal)
     }
   }
 
   // 渲染当前帧
-  render(ctx, x, y, width = 0, height = 0, alignMode = 'topleft', direction = undefined) {
-    if (!this.isStarted() || this.isFinished())
+  render(ctx, x, y, width = 0, height = 0, alignMode = 'topleft', atlasHeightIndex = 0) {
+    if (!this.isLoaded() || !this.isStarted() || this.isFinished())
       return
 
     let currFrame = this.frames[this.currIndex]
     //根据渲染对齐方式，修正渲染位置
-    width = width == 0 ? currFrame.width : width,
-    height = height == 0 ? currFrame.height : height
+    width = width == 0 ? currFrame.width * this.sizeRate : width,
+    height = height == 0 ? currFrame.height * this.sizeRate : height
     if (alignMode === 'center'){
       x -= width / 2
       y -= height / 2
@@ -77,13 +89,13 @@ export default class Animation {
     ctx.drawImage(
       currFrame.image,
       currFrame.srcX,
-      currFrame.srcY + Number.isNaN(direction) ? direction * this.atlasFrameHeight : 0,
+      currFrame.srcY + atlasHeightIndex * this.atlasFrameHeight,
       currFrame.width,
       currFrame.height,
       x + currFrame.offsetX,
       y + currFrame.offsetY,
-      width == 0 ? currFrame.width : width,
-      height == 0 ? currFrame.height : height
+      width,
+      height
     )
   }
 

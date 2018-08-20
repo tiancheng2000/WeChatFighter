@@ -22,6 +22,7 @@ export default class DataBus {
     this.score      = 0
     this.bullets    = []
     this.enemys     = []
+    this.floatages  = []
     //this.animations = []  //不再需要
     this.gameStatus = DataBus.GameRunning
   }
@@ -51,6 +52,19 @@ export default class DataBus {
     temp.visible = false
 
     this.pool.recover('enemy', enemy)
+  }
+
+  /**
+   * 回收漂浮物，进入对象池
+   * 此后不进入帧循环
+   */
+  removeFloatage(floatage) {
+    let temp = (floatage === undefined) ?
+      this.floatages.shift() : this.floatages.splice(this.floatages.indexOf(floatage), 1)
+
+    temp.visible = false
+
+    this.pool.recover('floatage', floatage)
   }
 
   /**

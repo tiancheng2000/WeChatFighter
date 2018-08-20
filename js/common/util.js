@@ -18,4 +18,14 @@ export default class Util {
     return undefined
   }
   
+  static promiseImageLoad(imagePath) {
+    let promise = new Promise((resolve, reject) => {
+      let img = new Image()
+      //setTimeout(()=>{}, 2000) //TEST
+      img.onload = () => resolve(img)
+      img.onerror = (e) => reject(e)
+      img.src = imagePath
+    })
+    return promise
+  }
 }

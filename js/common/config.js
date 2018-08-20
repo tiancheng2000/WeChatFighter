@@ -13,7 +13,7 @@ class Config {
       }
     }
     this.Bullet = {
-      Speed: 10,
+      Speed: 10,  //每次数据更新，并非每个单位时间 //IMPROVE
       Type: 'single'
     }
     this.GodMode = false
@@ -43,12 +43,13 @@ const observable = obj => {
       },
       set(target, key, value, receiver) {
         if (target[key] != value){
+          let oldValue = target[key]
           let res = Reflect.set(target, key, value, receiver)
           if (!res)
             return false
           if (!value.__isProxy){
             let propName = (target.keyStroke === undefined) ? key : target.keyStroke + '.' + key
-            this.onPropertyChanged(propName, value)
+            this.onPropertyChanged(propName, value, oldValue)
           }
           return res
         }
@@ -59,11 +60,11 @@ const observable = obj => {
           || subscription.set(propName, new Set()).get(propName) //cannot use WeakSet
         callbackSet.add(callback)
       },
-      onPropertyChanged(name, value) {
+      onPropertyChanged(name, value, oldValue) {
         let callbackSet = subscription.get(name)
         if (callbackSet !== undefined)
           for (let callback of callbackSet) {
-            callback(name, value) //IMPROVE: allow interruption
+            callback(name, value, oldValue) //IMPROVE: allow interruption
           }
       }
     })

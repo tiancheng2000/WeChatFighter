@@ -1,4 +1,5 @@
 import Util from '../common/util'
+import Constants from '../common/constants'
 
 const screenWidth  = window.innerWidth
 const screenHeight = window.innerHeight
@@ -9,7 +10,7 @@ atlas.src = 'images/Common.png'
 const SettingCommands = {
   textList: ['每秒数据更新频率切换', '子弹速度切换', '子弹类型切换', '无敌模式切换', '背景层事件响应切换'],
   commandList: ['switchUpdateRate', 'switchBulletSpeed', 'switchBulletType', 'youAreGod', 'backgroundActive'],
-  optionListList: [[60, 6], [10, 60], ['single', 'double'], [false, true], [false, true]]
+  optionListList: [[60, 6], [10, 60], Constants.Bullet.Types.slice(0, 1), [false, true], [false, true]]
 }
 
 export default class GameInfo {
