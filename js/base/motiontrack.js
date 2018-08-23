@@ -11,37 +11,38 @@ function within(test, mid, bias) { //left align
 }
 
 function getDegree(deltaX, deltaY) {
-  return Math.atan2(-deltaY, deltaX) * 180 / Math.PI
+  return Math.atan2(deltaY, deltaX) * 180 / Math.PI
 }
 function getDirection(degree) {
   let directionIn4 = 0
   let directionIn8 = 0
 
-  if (within(degree, -90, 45)) {
+  //倒置坐标系，x轴向右不变，y轴却是向下的
+  if (within(degree, 90, 45)) {
     directionIn4 = Constants.Directions.Down
-  } else if ((degree >= 135 && degree <= 180) || (degree >= -180 && degree < -135)) {
-    directionIn4 = Constants.Directions.Left
   } else if (within(degree, 0, 45)) {
     directionIn4 = Constants.Directions.Right
-  } else if (within(degree, 90, 45)) {
+  } else if ((degree >= 135 && degree <= 180) || (degree >= -180 && degree < -135)) {
+    directionIn4 = Constants.Directions.Left
+  } else if (within(degree, -90, 45)) {
     directionIn4 = Constants.Directions.Up
   }
   const PI_8 = 22.5  //PI/8 in degree
-  if (within(degree, 90, PI_8)) {
+  if (within(degree, -90, PI_8)) {
     directionIn8 = Constants.Directions.North
-  } else if (within(degree, 45, PI_8)) {
+  } else if (within(degree, -45, PI_8)) {
     directionIn8 = Constants.Directions.NE
   } else if (within(degree, 0, PI_8)) {
     directionIn8 = Constants.Directions.East
-  } else if (within(degree, -45, PI_8)) {
+  } else if (within(degree, 45, PI_8)) {
     directionIn8 = Constants.Directions.SE
-  } else if (within(degree, -90, PI_8)) {
+  } else if (within(degree, 90, PI_8)) {
     directionIn8 = Constants.Directions.South
-  } else if (within(degree, -135, PI_8)) {
+  } else if (within(degree, 135, PI_8)) {
     directionIn8 = Constants.Directions.SW
   } else if ((degree >= -180 && degree < -180 + PI_8) || (degree >= 180 - PI_8 && degree <= 180)) {
     directionIn8 = Constants.Directions.West
-  } else if (within(degree, 135, PI_8)) {
+  } else if (within(degree, -135, PI_8)) {
     directionIn8 = Constants.Directions.NW
   }
  
@@ -69,7 +70,11 @@ export default class MotionTrack {
       degree: getDegree(dest.x - src.x, dest.y - src.y),
       value: Math.hypot(dest.x - src.x, dest.y - src.y)
     }
-    let updateRequired = Math.ceil(Config.UpdateRate * delta.value / this.options.speed)  //aka.stepRequired
+    //console.log(`${delta.x},${delta.y} => ${delta.degree}`)
+    //需重新计算相对速度
+    this.data.speed = Math.hypot(this.options.speed * Math.cos(delta.degree * Math.PI / 180),
+          this.options.speed * Math.sin(delta.degree * Math.PI / 180) + Constants.Background.Speed * Config.UpdateRate) 
+    let updateRequired = Math.ceil(Config.UpdateRate * delta.value / this.data.speed)  //aka.stepRequired
     this.data.step = {
       x: delta.x / updateRequired,
       y: delta.y / updateRequired,

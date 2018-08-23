@@ -59,7 +59,7 @@ export default class AnimationBuilder {
 
     await Util.promiseImageLoad(atlasTexture.imagePath)
     .then( img => {
-      console.log('[TEST] Util.promiseImageLoad.then() comes first')
+      //console.log('[TEST] Util.promiseImageLoad.then() comes first')
       if (Array.isArray(frameNames))
         frameNames.forEach(name => convertAndPush(img, atlasTexture.frames[name]))
       else {
@@ -68,7 +68,7 @@ export default class AnimationBuilder {
       }
     })
     .catch(e => console.error(`initFramesFromAtlas failed: ${e}`))
-    console.log('[TEST] before return real result (through Promise.resolve)')
+    //console.log('[TEST] before return real result (through Promise.resolve)')
     return frames  //async方法返回的是以frames为resolve参数的Promise
   }
 

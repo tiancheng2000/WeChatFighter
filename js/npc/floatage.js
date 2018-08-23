@@ -89,13 +89,18 @@ export default class Floatage extends Sprite {
     this.motiontrack = new MotionTrack(MotionTrack.Types.Linear)
   }
 
-  init(speed) {
-    this.x = rnd(0, window.innerWidth - FLOATAGE_WIDTH)
-    this.y = -this.height
-    this.direction = {in4: 0, in8: 0}
+  init(speed, x, y) {
+    if (x === undefined || y === undefined){
+      this.x = rnd(0, window.innerWidth - FLOATAGE_WIDTH)
+      this.y = -this.height
+    }
+    else {
+      [this.x, this.y] = [x, y]
+    }
+    this.direction = { in4: 0, in8: 0 }
 
-    this[__.speed] = speed
-    this.motiontrack.options.speed = this[__.speed]
+    //this[__.speed] = speed
+    this.motiontrack.options.speed = speed
     //this.motiontrack.plan({ x: this.x, y: this.y }, 
     //    { x: this.x, y: window.innerHeight + this.height})  //简单垂直降落
     this.motiontrack.options.boundary = {

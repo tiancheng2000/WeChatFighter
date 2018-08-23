@@ -51,7 +51,7 @@ export default class DataBus {
 
     temp.visible = false
 
-    this.pool.recover('enemy', enemy)
+    this.pool.recover(enemy.constructor.name, enemy) //freighters has its own queue
   }
 
   /**
