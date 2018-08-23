@@ -6,15 +6,15 @@
 
 module.exports = {
   Enemy: {
-    Speed: 6,  //以一次更新为单位
+    Speed: 6,  //以一次更新为单位，且实际速度为4(扣除地图速度)、是玩家飞机缺省速度(即地图速度)的2倍
     SpawnRate: 2  //per second
   },
 
   Bullet: {
     //Speed: configurable = true
+    SpeedBase: 10,  //以一次更新为单位
     SpawnRate: 3,
     Types: ['single', 'double', 'triple', 'quadruple', 'quintuple'],
-    SpeedBase: 10  //以一次更新为单位
   },
 
   Floatage:{
@@ -22,6 +22,15 @@ module.exports = {
     SpawnRate: 0.2,
     SpawnMax: 3,
     AnimUpdateRate: 4
+  },
+
+  Freighter:{
+    Speed: 3,  //以一次更新为单位，且实际速度为1(扣除地图速度)
+    SpawnRate: 0.2  //per second
+  },
+
+  Background:{
+    Speed: 2
   },
 
   Directions:{

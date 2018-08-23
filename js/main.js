@@ -1,6 +1,7 @@
 import Player from './player/index'
 import Enemy from './npc/enemy'
 import Floatage from './npc/floatage'
+import Freighter from './npc/freighter'
 import BackGround from './runtime/background'
 import GameInfo from './runtime/gameinfo'
 import Music from './runtime/music'
@@ -140,6 +141,16 @@ export default class Main {
     }
   }
 
+  //运输机生成逻辑
+  freighterGenerate() {
+    if ((this.updateTimes * Constants.Freighter.SpawnRate) % Config.UpdateRate
+      < Constants.Freighter.SpawnRate) {
+      let freighter = databus.pool.getItemByClass('freighter', Freighter)
+      freighter.init(Constants.Freighter.Speed)
+      databus.enemys.push(freighter)  //freighter is an enemy
+    }
+  }
+
   // 全局碰撞检测
   collisionDetection() {
     let that = this
@@ -257,7 +268,8 @@ export default class Main {
 
     this.enemyGenerate()
 
-    this.floatageGenerate()
+    //this.floatageGenerate()  //Freighters spawn floatages in turn
+    this.freighterGenerate()
 
     this.collisionDetection()
 

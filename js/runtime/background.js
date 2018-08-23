@@ -1,4 +1,5 @@
 import Sprite from '../base/sprite'
+import Constants from '../common/constants'
 
 const screenWidth  = window.innerWidth
 const screenHeight = window.innerHeight
@@ -25,7 +26,7 @@ export default class BackGround extends Sprite {
   }
 
   update() {
-    this.top += 2
+    this.top += Constants.Background.Speed
 
     if ( this.top >= screenHeight )
       this.top = 0

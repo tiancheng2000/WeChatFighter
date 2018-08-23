@@ -21,12 +21,15 @@ function rnd(start, end){
 
 export default class Enemy extends Sprite {
 
-  constructor() {
-    super(ENEMY_IMG_SRC, ENEMY_WIDTH, ENEMY_HEIGHT)
+  constructor(img_src, width, height) {
+    if (img_src=== undefined || width === undefined || height === undefined)
+      super(ENEMY_IMG_SRC, ENEMY_WIDTH, ENEMY_HEIGHT)
+    else
+      super(img_src, width, height)
   }
 
   init(speed) {
-    this.x = rnd(0, window.innerWidth - ENEMY_WIDTH)
+    this.x = rnd(0, window.innerWidth - this.width)
     this.y = -this.height
     //this.birth = new Date().getTime()
 
